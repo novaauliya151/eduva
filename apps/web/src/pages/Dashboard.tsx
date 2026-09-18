@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState,type ComponentType} from 'react';
-import {Award,Banknote,Bell,BookOpen,CalendarDays,FileCheck2,GraduationCap,LayoutDashboard,LogOut,Medal,MessageCircle,Palette,TrendingUp,UserCircle,Users,WalletCards} from 'lucide-react';
+import {Award,Banknote,Bell,BookOpen,CalendarDays,ExternalLink,FileCheck2,GraduationCap,LayoutDashboard,LogOut,Medal,Menu,MessageCircle,Palette,Settings,TrendingUp,UserCircle,Users,WalletCards,X} from 'lucide-react';
 import {Link,useLocation} from 'react-router-dom';
 import {api} from '../api';
 import {useAuth} from '../store';
@@ -22,7 +22,28 @@ const nav:Record<Role,NavItem[]>={
  SUPERADMIN:[{to:'/admin',label:'Ringkasan',Icon:LayoutDashboard},{to:'/admin/users',label:'Pengguna',Icon:Users},{to:'/admin/parents',label:'Parent & anak',Icon:Users},{to:'/admin/classes',label:'Approval kelas',Icon:BookOpen},{to:'/admin/payments',label:'Pembayaran tunai',Icon:WalletCards},{to:'/admin/reports',label:'Approval laporan',Icon:FileCheck2},{to:'/admin/analytics',label:'Analitik & audit',Icon:TrendingUp},{to:'/admin/theme',label:'Pengaturan tema',Icon:Palette},{to:'/notifications',label:'Notifikasi',Icon:Bell}]
 };
 
-export function Dashboard(){const{user,logout}=useAuth();const path=useLocation().pathname;return <div className="app-shell"><aside><div className="brand dark"><GraduationCap/> Eduva</div><nav>{nav[user!.role].map(({to,label,Icon})=><Link key={to} to={to} className={path===to?'active':''}><Icon size={19}/> {label}{to==='/notifications'&&<NotificationBadge/>}</Link>)}</nav><button className="logout" onClick={logout}><LogOut/> Keluar</button></aside><main className="content"><header><div><span className="eyebrow purple">DASHBOARD {user!.role}</span><h1>Halo, {user!.name.split(' ')[0]}! 👋</h1><p>{roleText(user!.role)}</p></div><div className="avatar">{user!.name[0]}</div></header><Content path={path} role={user!.role}/></main></div>}
+export function Dashboard(){
+ const{user,logout}=useAuth(),path=useLocation().pathname;
+ const[menuOpen,setMenuOpen]=useState(false),[settingsOpen,setSettingsOpen]=useState(false);
+ useEffect(()=>{setMenuOpen(false);setSettingsOpen(false)},[path]);
+ const admin=user!.role==='SUPERADMIN';
+ return <div className={`app-shell ${admin?'admin-shell':''}`}>
+  <button className="mobile-menu-button" aria-label="Buka menu" aria-expanded={menuOpen} onClick={()=>setMenuOpen(x=>!x)}>{menuOpen?<X/>:<Menu/>}</button>
+  {menuOpen&&<button className="nav-backdrop" aria-label="Tutup menu" onClick={()=>setMenuOpen(false)}/>}
+  <aside className={menuOpen?'mobile-open':''}>
+   <div className="sidebar-brand"><div className="brand dark"><GraduationCap/> Eduva</div>{admin&&<small>ADMIN CONSOLE</small>}</div>
+   <nav className="sidebar-nav">{nav[user!.role].map(({to,label,Icon})=><Link key={to} to={to} className={path===to?'active':''}><Icon size={19}/> <span>{label}</span>{to==='/notifications'&&<NotificationBadge/>}</Link>)}</nav>
+   {admin?<div className="sidebar-user"><UserAvatar name={user!.name} avatarUrl={user!.avatarUrl}/><div className="sidebar-user-copy"><b>{user!.name}</b><span>Superadmin</span></div><div className="admin-settings sidebar-settings"><button aria-label="Pengaturan akun" aria-expanded={settingsOpen} onClick={()=>setSettingsOpen(x=>!x)}><Settings/></button>{settingsOpen&&<div className="admin-account-menu"><div><UserAvatar name={user!.name} avatarUrl={user!.avatarUrl}/><p><b>{user!.name}</b><small>{user!.email}</small></p></div><Link to="/profile"><UserCircle/> Profil</Link><button onClick={logout}><LogOut/> Keluar</button></div>}</div></div>:<button className="logout" onClick={logout}><LogOut/> Keluar</button>}
+  </aside>
+  <main className="content">
+   {admin?<header className="admin-header"><div className="admin-header-title"><span>ADMINISTRATOR</span><h1>{adminPageTitle(path)}</h1></div><div className="admin-header-actions"><a href="/" target="_blank" rel="noreferrer">Lihat Website <ExternalLink/></a></div></header>:<header><div><span className="eyebrow purple">DASHBOARD {user!.role}</span><h1>Halo, {user!.name.split(' ')[0]}! 👋</h1><p>{roleText(user!.role)}</p></div><UserAvatar name={user!.name} avatarUrl={user!.avatarUrl}/></header>}
+   <div className={admin?'admin-page-content':''}><Content path={path} role={user!.role}/></div>
+  </main>
+ </div>
+}
+
+function adminPageTitle(path:string){const item=nav.SUPERADMIN.find(x=>x.to===path);if(path==='/profile')return 'Profil Admin';return item?.label||'Dashboard Admin'}
+function UserAvatar({name,avatarUrl}:{name:string;avatarUrl?:string}){const apiOrigin=(import.meta.env.VITE_API_URL??'http://localhost:4000/api').replace(/\/api\/?$/,'');const src=avatarUrl?(avatarUrl.startsWith('http')?avatarUrl:`${apiOrigin}${avatarUrl}`):'';return <span className="avatar user-avatar">{src?<img src={src} alt={`Foto profil ${name}`}/>:name[0]}</span>}
 function NotificationBadge(){const[count,setCount]=useState(0),previous=useRef(0);useEffect(()=>{const poll=()=>api.get('/notifications').then(r=>{const next=r.data.unread;if(next>previous.current&&previous.current>0&&'Notification'in window&&Notification.permission==='granted')new Notification('Notifikasi Eduva',{body:`Ada ${next} notifikasi belum dibaca.`});previous.current=next;setCount(next)});poll();const timer=setInterval(poll,15000);if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();return()=>clearInterval(timer)},[]);return count?<b className="notification-badge">{count>99?'99+':count}</b>:null}
 
 function roleText(role:Role){return role==='SUPERADMIN'?'Kelola seluruh operasional platform Eduva.':role==='MENTOR'?'Kelola kelas dan perkembangan siswa Anda.':role==='PARENT'?'Pantau perjalanan belajar anak dengan mudah.':'Lanjutkan perjalanan belajarmu hari ini.'}
