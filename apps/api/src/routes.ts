@@ -11,6 +11,7 @@ import {featureRoutes} from './routes/featureRoutes.js';
 import {issueCertificate} from './services/certificateService.js';
 import {accountRoutes} from './routes/accountRoutes.js';
 import {learningRoutes} from './routes/learningRoutes.js';
+import {advancedRoutes} from './routes/advancedRoutes.js';
 export const routes=Router();
 const pub={id:true,name:true,email:true,role:true,status:true,avatarUrl:true} as const;
 const sign=(id:string,role:Role)=>jwt.sign({id,role},env.JWT_SECRET,{expiresIn:'1d'});
@@ -34,3 +35,4 @@ routes.get('/admin/users',auth,allow('SUPERADMIN'),async(_req,res)=>res.json(awa
 routes.patch('/admin/users/:id/status',auth,allow('SUPERADMIN'),async(req,res)=>{const{status}=z.object({status:z.enum(['ACTIVE','PENDING','SUSPENDED'])}).parse(req.body);const user=await prisma.user.update({where:{id:String(req.params.id)},data:{status},select:pub});await prisma.notification.create({data:{userId:user.id,title:`Akun ${status==='ACTIVE'?'disetujui':'diperbarui'}`,message:`Status akun Anda sekarang ${status}.`}});res.json(user)});
 routes.use(featureRoutes);
 routes.use(learningRoutes);
+routes.use(advancedRoutes);

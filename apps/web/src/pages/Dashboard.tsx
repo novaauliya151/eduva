@@ -1,4 +1,4 @@
-import {useEffect,useState,type ComponentType} from 'react';
+import {useEffect,useRef,useState,type ComponentType} from 'react';
 import {Award,Banknote,Bell,BookOpen,CalendarDays,FileCheck2,GraduationCap,LayoutDashboard,LogOut,Medal,MessageCircle,TrendingUp,UserCircle,Users,WalletCards} from 'lucide-react';
 import {Link,useLocation} from 'react-router-dom';
 import {api} from '../api';
@@ -11,16 +11,18 @@ import {ClassesPage} from './ClassesPage';
 import {ForumFull} from './ForumFull';
 import {MentorClassManager} from './MentorClassManager';
 import {Leaderboard} from './Leaderboard';
+import {AdminAnalytics,AdminParentLinks,CashAdminAdvanced,CashStudentAdvanced,LiveManager,MentorMonitoring,ParentTryouts} from './AdvancedPages';
 
 type NavItem={to:string;label:string;Icon:ComponentType<{size?:number}>};
 const nav:Record<Role,NavItem[]>={
  STUDENT:[{to:'/',label:'Ringkasan',Icon:LayoutDashboard},{to:'/classes',label:'Kelas',Icon:BookOpen},{to:'/leaderboard',label:'Leaderboard',Icon:Medal},{to:'/forum',label:'Forum',Icon:MessageCircle},{to:'/live',label:'Live class',Icon:CalendarDays},{to:'/progress',label:'Progres',Icon:TrendingUp},{to:'/certificates',label:'Sertifikat',Icon:Award},{to:'/transactions',label:'Pembayaran',Icon:WalletCards},{to:'/notifications',label:'Notifikasi',Icon:Bell},{to:'/profile',label:'Profil',Icon:UserCircle}],
- MENTOR:[{to:'/',label:'Ringkasan',Icon:LayoutDashboard},{to:'/mentor/classes',label:'Kelola kelas',Icon:BookOpen},{to:'/mentor/learning',label:'Materi & kuis',Icon:GraduationCap},{to:'/mentor/reports',label:'Laporan siswa',Icon:FileCheck2},{to:'/forum',label:'Forum',Icon:MessageCircle},{to:'/live',label:'Live class',Icon:CalendarDays},{to:'/notifications',label:'Notifikasi',Icon:Bell},{to:'/profile',label:'Profil',Icon:UserCircle}],
- PARENT:[{to:'/parent',label:'Anak & progres',Icon:Users},{to:'/notifications',label:'Notifikasi',Icon:Bell}],
- SUPERADMIN:[{to:'/admin',label:'Ringkasan',Icon:LayoutDashboard},{to:'/admin/users',label:'Pengguna',Icon:Users},{to:'/admin/classes',label:'Approval kelas',Icon:BookOpen},{to:'/admin/payments',label:'Pembayaran tunai',Icon:WalletCards},{to:'/admin/reports',label:'Approval laporan',Icon:FileCheck2},{to:'/admin/revenue',label:'Pendapatan',Icon:Banknote},{to:'/notifications',label:'Notifikasi',Icon:Bell}]
+ MENTOR:[{to:'/',label:'Ringkasan',Icon:LayoutDashboard},{to:'/mentor/classes',label:'Kelola kelas',Icon:BookOpen},{to:'/mentor/learning',label:'Materi & kuis',Icon:GraduationCap},{to:'/mentor/monitoring',label:'Monitoring siswa',Icon:TrendingUp},{to:'/mentor/reports',label:'Laporan siswa',Icon:FileCheck2},{to:'/forum',label:'Forum',Icon:MessageCircle},{to:'/live',label:'Live class',Icon:CalendarDays},{to:'/notifications',label:'Notifikasi',Icon:Bell},{to:'/profile',label:'Profil',Icon:UserCircle}],
+ PARENT:[{to:'/parent',label:'Anak & progres',Icon:Users},{to:'/parent/tryouts',label:'Hasil tryout',Icon:Medal},{to:'/notifications',label:'Notifikasi',Icon:Bell}],
+ SUPERADMIN:[{to:'/admin',label:'Ringkasan',Icon:LayoutDashboard},{to:'/admin/users',label:'Pengguna',Icon:Users},{to:'/admin/parents',label:'Parent & anak',Icon:Users},{to:'/admin/classes',label:'Approval kelas',Icon:BookOpen},{to:'/admin/payments',label:'Pembayaran tunai',Icon:WalletCards},{to:'/admin/reports',label:'Approval laporan',Icon:FileCheck2},{to:'/admin/analytics',label:'Analitik & audit',Icon:TrendingUp},{to:'/notifications',label:'Notifikasi',Icon:Bell}]
 };
 
-export function Dashboard(){const{user,logout}=useAuth();const path=useLocation().pathname;return <div className="app-shell"><aside><div className="brand dark"><GraduationCap/> Eduva</div><nav>{nav[user!.role].map(({to,label,Icon})=><Link key={to} to={to} className={path===to?'active':''}><Icon size={19}/> {label}</Link>)}</nav><button className="logout" onClick={logout}><LogOut/> Keluar</button></aside><main className="content"><header><div><span className="eyebrow purple">DASHBOARD {user!.role}</span><h1>Halo, {user!.name.split(' ')[0]}! 👋</h1><p>{roleText(user!.role)}</p></div><div className="avatar">{user!.name[0]}</div></header><Content path={path} role={user!.role}/></main></div>}
+export function Dashboard(){const{user,logout}=useAuth();const path=useLocation().pathname;return <div className="app-shell"><aside><div className="brand dark"><GraduationCap/> Eduva</div><nav>{nav[user!.role].map(({to,label,Icon})=><Link key={to} to={to} className={path===to?'active':''}><Icon size={19}/> {label}{to==='/notifications'&&<NotificationBadge/>}</Link>)}</nav><button className="logout" onClick={logout}><LogOut/> Keluar</button></aside><main className="content"><header><div><span className="eyebrow purple">DASHBOARD {user!.role}</span><h1>Halo, {user!.name.split(' ')[0]}! 👋</h1><p>{roleText(user!.role)}</p></div><div className="avatar">{user!.name[0]}</div></header><Content path={path} role={user!.role}/></main></div>}
+function NotificationBadge(){const[count,setCount]=useState(0),previous=useRef(0);useEffect(()=>{const poll=()=>api.get('/notifications').then(r=>{const next=r.data.unread;if(next>previous.current&&previous.current>0&&'Notification'in window&&Notification.permission==='granted')new Notification('Notifikasi Eduva',{body:`Ada ${next} notifikasi belum dibaca.`});previous.current=next;setCount(next)});poll();const timer=setInterval(poll,15000);if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();return()=>clearInterval(timer)},[]);return count?<b className="notification-badge">{count>99?'99+':count}</b>:null}
 
 function roleText(role:Role){return role==='SUPERADMIN'?'Kelola seluruh operasional platform Eduva.':role==='MENTOR'?'Kelola kelas dan perkembangan siswa Anda.':role==='PARENT'?'Pantau perjalanan belajar anak dengan mudah.':'Lanjutkan perjalanan belajarmu hari ini.'}
 
@@ -33,18 +35,21 @@ function Content({path,role}:{path:string;role:Role}){
  if(path.startsWith('/quiz/'))return <QuizPlay/>;
  if(path==='/notifications')return <Notifications/>;
  if(path==='/forum')return <ForumFull/>;
- if(path==='/live')return <LiveSessions mentor={role==='MENTOR'}/>;
+ if(path==='/live')return role==='MENTOR'?<LiveManager/>:<LiveSessions/>;
  if(path==='/certificates')return <Certificates/>;
- if(path==='/transactions')return <CashTransactions/>;
+ if(path==='/transactions')return <CashStudentAdvanced/>;
  if(path==='/mentor/classes')return <MentorClassManager/>;
  if(path==='/mentor/learning')return <MentorLearning/>;
+ if(path==='/mentor/monitoring')return <MentorMonitoring/>;
  if(path==='/mentor/reports')return <MentorReports/>;
  if(path==='/parent')return <ParentPortal/>;
+ if(path==='/parent/tryouts')return <ParentTryouts/>;
  if(path==='/admin/users')return <AdminUsers/>;
  if(path==='/admin/classes')return <AdminClasses/>;
- if(path==='/admin/payments')return <AdminCashPayments/>;
+ if(path==='/admin/payments')return <CashAdminAdvanced/>;
+ if(path==='/admin/parents')return <AdminParentLinks/>;
  if(path==='/admin/reports')return <AdminReports/>;
- if(path==='/admin/revenue')return <Revenue/>;
+ if(path==='/admin/revenue'||path==='/admin/analytics')return <AdminAnalytics/>;
  return <Overview role={role} classesOnly={path==='/classes'} progressOnly={path==='/progress'}/>;
 }
 

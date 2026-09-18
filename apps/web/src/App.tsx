@@ -54,12 +54,16 @@ export function App(){return <Routes>
  <Route path="/mentor/classes" element={<Guard roles={['MENTOR']}/>}/>
  <Route path="/mentor/learning" element={<Guard roles={['MENTOR']}/>}/>
  <Route path="/mentor/reports" element={<Guard roles={['MENTOR']}/>}/>
+ <Route path="/mentor/monitoring" element={<Guard roles={['MENTOR']}/>}/>
  <Route path="/parent" element={<Guard roles={['PARENT']}/>}/>
+ <Route path="/parent/tryouts" element={<Guard roles={['PARENT']}/>}/>
  <Route path="/admin" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="/admin/users" element={<Guard roles={['SUPERADMIN']}/>}/>
+ <Route path="/admin/parents" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="/admin/classes" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="/admin/payments" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="/admin/reports" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="/admin/revenue" element={<Guard roles={['SUPERADMIN']}/>}/>
+ <Route path="/admin/analytics" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="*" element={<Navigate to="/" replace/>}/>
  </Routes>}
