@@ -9,6 +9,8 @@ import {PlacementTest} from './pages/PlacementTest';
 import {ForgotPassword,ResetPassword} from './pages/AuthExtras';
 import {RegisterSecure} from './pages/RegisterSecure';
 import {VerifyEmail} from './pages/VerifyEmail';
+import {HomePage} from './pages/HomePage';
+import {useTheme} from './theme';
 
 function Guard({roles}:{roles?:Role[]}){
  const user=useAuth(s=>s.user);
@@ -35,14 +37,15 @@ function PlacementRoute(){
  return <PlacementTest/>;
 }
 
-export function App(){return <Routes>
+export function App(){const loadTheme=useTheme(s=>s.load);useEffect(()=>{loadTheme()},[loadTheme]);return <Routes>
+ <Route path="/" element={<HomePage/>}/>
  <Route path="/login" element={<Login/>}/>
  <Route path="/register" element={<RegisterSecure/>}/>
  <Route path="/forgot-password" element={<ForgotPassword/>}/>
  <Route path="/reset-password" element={<ResetPassword/>}/>
  <Route path="/verify-email" element={<VerifyEmail/>}/>
  <Route path="/placement-test" element={<PlacementRoute/>}/>
- <Route path="/" element={<StudentGuard/>}/>
+ <Route path="/dashboard" element={<StudentGuard/>}/>
  <Route path="/classes" element={<StudentGuard/>}/>
  <Route path="/classes/:id" element={<StudentGuard/>}/>
  <Route path="/quiz/:id" element={<StudentGuard/>}/>
@@ -68,5 +71,6 @@ export function App(){return <Routes>
  <Route path="/admin/reports" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="/admin/revenue" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="/admin/analytics" element={<Guard roles={['SUPERADMIN']}/>}/>
+ <Route path="/admin/theme" element={<Guard roles={['SUPERADMIN']}/>}/>
  <Route path="*" element={<Navigate to="/" replace/>}/>
  </Routes>}

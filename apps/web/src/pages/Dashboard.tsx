@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState,type ComponentType} from 'react';
-import {Award,Banknote,Bell,BookOpen,CalendarDays,FileCheck2,GraduationCap,LayoutDashboard,LogOut,Medal,MessageCircle,TrendingUp,UserCircle,Users,WalletCards} from 'lucide-react';
+import {Award,Banknote,Bell,BookOpen,CalendarDays,FileCheck2,GraduationCap,LayoutDashboard,LogOut,Medal,MessageCircle,Palette,TrendingUp,UserCircle,Users,WalletCards} from 'lucide-react';
 import {Link,useLocation} from 'react-router-dom';
 import {api} from '../api';
 import {useAuth} from '../store';
@@ -12,13 +12,14 @@ import {ForumFull} from './ForumFull';
 import {MentorClassManager} from './MentorClassManager';
 import {Leaderboard} from './Leaderboard';
 import {AdminAnalytics,AdminParentLinks,CashAdminAdvanced,CashStudentAdvanced,LiveManager,MentorMonitoring,ParentTryouts} from './AdvancedPages';
+import {ThemeSettings} from './ThemeSettings';
 
 type NavItem={to:string;label:string;Icon:ComponentType<{size?:number}>};
 const nav:Record<Role,NavItem[]>={
- STUDENT:[{to:'/',label:'Ringkasan',Icon:LayoutDashboard},{to:'/classes',label:'Kelas',Icon:BookOpen},{to:'/leaderboard',label:'Leaderboard',Icon:Medal},{to:'/forum',label:'Forum',Icon:MessageCircle},{to:'/live',label:'Live class',Icon:CalendarDays},{to:'/progress',label:'Progres',Icon:TrendingUp},{to:'/certificates',label:'Sertifikat',Icon:Award},{to:'/transactions',label:'Pembayaran',Icon:WalletCards},{to:'/notifications',label:'Notifikasi',Icon:Bell},{to:'/profile',label:'Profil',Icon:UserCircle}],
- MENTOR:[{to:'/',label:'Ringkasan',Icon:LayoutDashboard},{to:'/mentor/classes',label:'Kelola kelas',Icon:BookOpen},{to:'/mentor/learning',label:'Materi & kuis',Icon:GraduationCap},{to:'/mentor/monitoring',label:'Monitoring siswa',Icon:TrendingUp},{to:'/mentor/reports',label:'Laporan siswa',Icon:FileCheck2},{to:'/forum',label:'Forum',Icon:MessageCircle},{to:'/live',label:'Live class',Icon:CalendarDays},{to:'/notifications',label:'Notifikasi',Icon:Bell},{to:'/profile',label:'Profil',Icon:UserCircle}],
+ STUDENT:[{to:'/dashboard',label:'Ringkasan',Icon:LayoutDashboard},{to:'/classes',label:'Kelas',Icon:BookOpen},{to:'/leaderboard',label:'Leaderboard',Icon:Medal},{to:'/forum',label:'Forum',Icon:MessageCircle},{to:'/live',label:'Live class',Icon:CalendarDays},{to:'/progress',label:'Progres',Icon:TrendingUp},{to:'/certificates',label:'Sertifikat',Icon:Award},{to:'/transactions',label:'Pembayaran',Icon:WalletCards},{to:'/notifications',label:'Notifikasi',Icon:Bell},{to:'/profile',label:'Profil',Icon:UserCircle}],
+ MENTOR:[{to:'/dashboard',label:'Ringkasan',Icon:LayoutDashboard},{to:'/mentor/classes',label:'Kelola kelas',Icon:BookOpen},{to:'/mentor/learning',label:'Materi & kuis',Icon:GraduationCap},{to:'/mentor/monitoring',label:'Monitoring siswa',Icon:TrendingUp},{to:'/mentor/reports',label:'Laporan siswa',Icon:FileCheck2},{to:'/forum',label:'Forum',Icon:MessageCircle},{to:'/live',label:'Live class',Icon:CalendarDays},{to:'/notifications',label:'Notifikasi',Icon:Bell},{to:'/profile',label:'Profil',Icon:UserCircle}],
  PARENT:[{to:'/parent',label:'Anak & progres',Icon:Users},{to:'/parent/tryouts',label:'Hasil tryout',Icon:Medal},{to:'/notifications',label:'Notifikasi',Icon:Bell}],
- SUPERADMIN:[{to:'/admin',label:'Ringkasan',Icon:LayoutDashboard},{to:'/admin/users',label:'Pengguna',Icon:Users},{to:'/admin/parents',label:'Parent & anak',Icon:Users},{to:'/admin/classes',label:'Approval kelas',Icon:BookOpen},{to:'/admin/payments',label:'Pembayaran tunai',Icon:WalletCards},{to:'/admin/reports',label:'Approval laporan',Icon:FileCheck2},{to:'/admin/analytics',label:'Analitik & audit',Icon:TrendingUp},{to:'/notifications',label:'Notifikasi',Icon:Bell}]
+ SUPERADMIN:[{to:'/admin',label:'Ringkasan',Icon:LayoutDashboard},{to:'/admin/users',label:'Pengguna',Icon:Users},{to:'/admin/parents',label:'Parent & anak',Icon:Users},{to:'/admin/classes',label:'Approval kelas',Icon:BookOpen},{to:'/admin/payments',label:'Pembayaran tunai',Icon:WalletCards},{to:'/admin/reports',label:'Approval laporan',Icon:FileCheck2},{to:'/admin/analytics',label:'Analitik & audit',Icon:TrendingUp},{to:'/admin/theme',label:'Pengaturan tema',Icon:Palette},{to:'/notifications',label:'Notifikasi',Icon:Bell}]
 };
 
 export function Dashboard(){const{user,logout}=useAuth();const path=useLocation().pathname;return <div className="app-shell"><aside><div className="brand dark"><GraduationCap/> Eduva</div><nav>{nav[user!.role].map(({to,label,Icon})=><Link key={to} to={to} className={path===to?'active':''}><Icon size={19}/> {label}{to==='/notifications'&&<NotificationBadge/>}</Link>)}</nav><button className="logout" onClick={logout}><LogOut/> Keluar</button></aside><main className="content"><header><div><span className="eyebrow purple">DASHBOARD {user!.role}</span><h1>Halo, {user!.name.split(' ')[0]}! 👋</h1><p>{roleText(user!.role)}</p></div><div className="avatar">{user!.name[0]}</div></header><Content path={path} role={user!.role}/></main></div>}
@@ -49,6 +50,7 @@ function Content({path,role}:{path:string;role:Role}){
  if(path==='/admin/payments')return <CashAdminAdvanced/>;
  if(path==='/admin/parents')return <AdminParentLinks/>;
  if(path==='/admin/reports')return <AdminReports/>;
+ if(path==='/admin/theme')return <ThemeSettings/>;
  if(path==='/admin/revenue'||path==='/admin/analytics')return <AdminAnalytics/>;
  return <Overview role={role} classesOnly={path==='/classes'} progressOnly={path==='/progress'}/>;
 }
