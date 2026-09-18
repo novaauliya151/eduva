@@ -1,0 +1,380 @@
+generator client {
+ provider = "prisma-client-js"
+}
+datasource db {
+ provider = "postgresql"
+ url = env("DATABASE_URL")
+}
+enum Role {
+ STUDENT
+ MENTOR
+ PARENT
+ SUPERADMIN
+}
+enum UserStatus {
+ ACTIVE
+ PENDING
+ SUSPENDED
+}
+enum ClassType {
+ DIGITAL
+ BIMBEL_TERJADWAL
+}
+enum PublishStatus {
+ DRAFT
+ PENDING_APPROVAL
+ PUBLISHED
+}
+enum MaterialType {
+ VIDEO
+ PDF
+ TEXT
+}
+enum EnrollmentStatus {
+ ACTIVE
+ COMPLETED
+ CANCELLED
+}
+enum Difficulty {
+ EASY
+ MEDIUM
+ HARD
+}
+enum QuizType {
+ DRILLING
+ TRYOUT
+}
+enum ReportStatus {
+ PENDING
+ APPROVED
+ REJECTED
+}
+enum LiveStatus {
+ SCHEDULED
+ ONGOING
+ COMPLETED
+ CANCELLED
+}
+enum TransactionStatus {
+ PENDING
+ PAID
+ FAILED
+ REFUNDED
+}
+model User {
+ id String @id @default(uuid()) @db.Uuid
+ name String
+ email String @unique
+ password String
+ role Role @default(STUDENT)
+ status UserStatus @default(ACTIVE)
+ avatarUrl String? @map("avatar_url")
+ createdAt DateTime @default(now()) @map("created_at")
+ updatedAt DateTime @updatedAt @map("updated_at")
+ createdClasses Class[] @relation("ClassCreator")
+ mentoredClasses Class[] @relation("ClassMentor")
+ enrollments Enrollment[]
+ questions QuestionBank[]
+ quizzes Quiz[]
+ attempts QuizAttempt[]
+ progress StudentProgress[]
+ studentProfile StudentProfile? @relation("StudentProfileUser")
+ children StudentProfile[] @relation("ParentChildren")
+ placementAttempts PlacementAttempt[]
+ forumThreads ForumThread[]
+ forumReplies ForumReply[]
+ certificates Certificate[] @relation("StudentCertificates")
+ mentorReports ProgressReport[] @relation("MentorReports")
+ studentReports ProgressReport[] @relation("StudentReports")
+ approvedReports ProgressReport[] @relation("ApprovedReports")
+ liveSessions LiveSession[] @relation("LiveMentor")
+ notifications Notification[]
+ transactions Transaction[]
+ passwordResetTokens PasswordResetToken[]
+ materialCompletions MaterialCompletion[]
+ @@map("users")
+}
+model StudentProfile {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @unique @db.Uuid @map("user_id")
+ gradeLevel String @default("SMA") @map("grade_level")
+ placementLevel String? @map("placement_level")
+ placementScore Decimal? @db.Decimal(5,2) @map("placement_score")
+ placementCompletedAt DateTime? @map("placement_completed_at")
+ parentId String? @db.Uuid @map("parent_id")
+ user User @relation("StudentProfileUser",fields:[userId],references:[id],onDelete:Cascade)
+ parent User? @relation("ParentChildren",fields:[parentId],references:[id],onDelete:SetNull)
+ @@map("student_profiles")
+}
+model PlacementQuestion {
+ id String @id @default(uuid()) @db.Uuid
+ question String
+ options Json
+ correctAnswer String @map("correct_answer")
+ order Int @default(0)
+ isActive Boolean @default(true) @map("is_active")
+ answers PlacementAnswer[]
+ @@map("placement_questions")
+}
+model PlacementAttempt {
+ id String @id @default(uuid()) @db.Uuid
+ studentId String @db.Uuid @map("student_id")
+ score Decimal @db.Decimal(5,2)
+ level String
+ completedAt DateTime @default(now()) @map("completed_at")
+ student User @relation(fields:[studentId],references:[id],onDelete:Cascade)
+ answers PlacementAnswer[]
+ @@index([studentId])
+ @@map("placement_attempts")
+}
+model PlacementAnswer {
+ id String @id @default(uuid()) @db.Uuid
+ attemptId String @db.Uuid @map("attempt_id")
+ questionId String @db.Uuid @map("question_id")
+ selectedAnswer String @map("selected_answer")
+ isCorrect Boolean @map("is_correct")
+ attempt PlacementAttempt @relation(fields:[attemptId],references:[id],onDelete:Cascade)
+ question PlacementQuestion @relation(fields:[questionId],references:[id])
+ @@unique([attemptId,questionId])
+ @@map("placement_answers")
+}
+model Subject {
+ id String @id @default(uuid()) @db.Uuid
+ name String
+ gradeLevel String @map("grade_level")
+ classes Class[]
+ questions QuestionBank[]
+ @@unique([name,gradeLevel])
+ @@map("subjects")
+}
+model Class {
+ id String @id @default(uuid()) @db.Uuid
+ title String
+ description String
+ subjectId String @db.Uuid @map("subject_id")
+ mentorId String? @db.Uuid @map("mentor_id")
+ type ClassType
+ price Decimal? @db.Decimal(12,2)
+ status PublishStatus @default(DRAFT)
+ createdById String @db.Uuid @map("created_by")
+ createdAt DateTime @default(now()) @map("created_at")
+ subject Subject @relation(fields:[subjectId],references:[id])
+ mentor User? @relation("ClassMentor",fields:[mentorId],references:[id])
+ createdBy User @relation("ClassCreator",fields:[createdById],references:[id])
+ materials ClassMaterial[]
+ enrollments Enrollment[]
+ quizzes Quiz[]
+ progress StudentProgress[]
+ forumThreads ForumThread[]
+ certificates Certificate[]
+ reports ProgressReport[]
+ liveSessions LiveSession[]
+ transactions Transaction[]
+ @@map("classes")
+}
+model ClassMaterial {
+ id String @id @default(uuid()) @db.Uuid
+ classId String @db.Uuid @map("class_id")
+ title String
+ type MaterialType
+ contentUrl String @map("content_url")
+ order Int @default(0)
+ class Class @relation(fields:[classId],references:[id],onDelete:Cascade)
+ completions MaterialCompletion[]
+ @@map("class_materials")
+}
+model PasswordResetToken {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid @map("user_id")
+ tokenHash String @unique @map("token_hash")
+ expiresAt DateTime @map("expires_at")
+ usedAt DateTime? @map("used_at")
+ createdAt DateTime @default(now()) @map("created_at")
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@index([userId])
+ @@map("password_reset_tokens")
+}
+model MaterialCompletion {
+ id String @id @default(uuid()) @db.Uuid
+ studentId String @db.Uuid @map("student_id")
+ materialId String @db.Uuid @map("material_id")
+ completedAt DateTime @default(now()) @map("completed_at")
+ student User @relation(fields:[studentId],references:[id],onDelete:Cascade)
+ material ClassMaterial @relation(fields:[materialId],references:[id],onDelete:Cascade)
+ @@unique([studentId,materialId])
+ @@map("material_completions")
+}
+model Enrollment {
+ id String @id @default(uuid()) @db.Uuid
+ studentId String @db.Uuid @map("student_id")
+ classId String @db.Uuid @map("class_id")
+ enrolledAt DateTime @default(now()) @map("enrolled_at")
+ status EnrollmentStatus @default(ACTIVE)
+ student User @relation(fields:[studentId],references:[id])
+ class Class @relation(fields:[classId],references:[id],onDelete:Cascade)
+ @@unique([studentId,classId])
+ @@map("enrollments")
+}
+model QuestionBank {
+ id String @id @default(uuid()) @db.Uuid
+ subjectId String @db.Uuid @map("subject_id")
+ topic String
+ difficulty Difficulty
+ question String
+ options Json
+ correctAnswer String @map("correct_answer")
+ explanation String?
+ createdById String @db.Uuid @map("created_by")
+ subject Subject @relation(fields:[subjectId],references:[id])
+ createdBy User @relation(fields:[createdById],references:[id])
+ quizLinks QuizQuestion[]
+ answers QuizAnswer[]
+ @@map("question_banks")
+}
+model Quiz {
+ id String @id @default(uuid()) @db.Uuid
+ classId String? @db.Uuid @map("class_id")
+ title String
+ type QuizType
+ durationMinutes Int @map("duration_minutes")
+ scheduledAt DateTime? @map("scheduled_at")
+ createdById String @db.Uuid @map("created_by")
+ class Class? @relation(fields:[classId],references:[id],onDelete:Cascade)
+ createdBy User @relation(fields:[createdById],references:[id])
+ questions QuizQuestion[]
+ attempts QuizAttempt[]
+ @@map("quizzes")
+}
+model QuizQuestion {
+ quizId String @db.Uuid @map("quiz_id")
+ questionId String @db.Uuid @map("question_id")
+ quiz Quiz @relation(fields:[quizId],references:[id],onDelete:Cascade)
+ question QuestionBank @relation(fields:[questionId],references:[id],onDelete:Cascade)
+ @@id([quizId,questionId])
+ @@map("quiz_questions")
+}
+model QuizAttempt {
+ id String @id @default(uuid()) @db.Uuid
+ quizId String @db.Uuid @map("quiz_id")
+ studentId String @db.Uuid @map("student_id")
+ score Decimal? @db.Decimal(5,2)
+ startedAt DateTime @default(now()) @map("started_at")
+ finishedAt DateTime? @map("finished_at")
+ quiz Quiz @relation(fields:[quizId],references:[id],onDelete:Cascade)
+ student User @relation(fields:[studentId],references:[id])
+ answers QuizAnswer[]
+ @@map("quiz_attempts")
+}
+model QuizAnswer {
+ id String @id @default(uuid()) @db.Uuid
+ attemptId String @db.Uuid @map("attempt_id")
+ questionId String @db.Uuid @map("question_id")
+ selectedAnswer String @map("selected_answer")
+ isCorrect Boolean @map("is_correct")
+ attempt QuizAttempt @relation(fields:[attemptId],references:[id],onDelete:Cascade)
+ question QuestionBank @relation(fields:[questionId],references:[id])
+ @@unique([attemptId,questionId])
+ @@map("quiz_answers")
+}
+model StudentProgress {
+ id String @id @default(uuid()) @db.Uuid
+ studentId String @db.Uuid @map("student_id")
+ classId String @db.Uuid @map("class_id")
+ materialCompleted Int @default(0) @map("material_completed")
+ totalMaterial Int @default(0) @map("total_material")
+ lastAccessed DateTime @default(now()) @map("last_accessed")
+ student User @relation(fields:[studentId],references:[id])
+ class Class @relation(fields:[classId],references:[id],onDelete:Cascade)
+ @@unique([studentId,classId])
+ @@map("student_progress")
+}
+model ForumThread {
+ id String @id @default(uuid()) @db.Uuid
+ classId String @db.Uuid @map("class_id")
+ userId String @db.Uuid @map("user_id")
+ title String
+ content String
+ createdAt DateTime @default(now()) @map("created_at")
+ updatedAt DateTime @updatedAt @map("updated_at")
+ class Class @relation(fields:[classId],references:[id],onDelete:Cascade)
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ replies ForumReply[]
+ @@index([classId,updatedAt])
+ @@map("forum_threads")
+}
+model ForumReply {
+ id String @id @default(uuid()) @db.Uuid
+ threadId String @db.Uuid @map("thread_id")
+ userId String @db.Uuid @map("user_id")
+ content String
+ createdAt DateTime @default(now()) @map("created_at")
+ thread ForumThread @relation(fields:[threadId],references:[id],onDelete:Cascade)
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@map("forum_replies")
+}
+model Certificate {
+ id String @id @default(uuid()) @db.Uuid
+ studentId String @db.Uuid @map("student_id")
+ classId String @db.Uuid @map("class_id")
+ certificateUrl String @map("certificate_url")
+ issuedAt DateTime @default(now()) @map("issued_at")
+ student User @relation("StudentCertificates",fields:[studentId],references:[id],onDelete:Cascade)
+ class Class @relation(fields:[classId],references:[id],onDelete:Cascade)
+ @@unique([studentId,classId])
+ @@map("certificates")
+}
+model ProgressReport {
+ id String @id @default(uuid()) @db.Uuid
+ studentId String @db.Uuid @map("student_id")
+ mentorId String @db.Uuid @map("mentor_id")
+ classId String @db.Uuid @map("class_id")
+ period String
+ score Decimal? @db.Decimal(5,2)
+ notes String
+ status ReportStatus @default(PENDING)
+ rejectionReason String? @map("rejection_reason")
+ approvedById String? @db.Uuid @map("approved_by")
+ createdAt DateTime @default(now()) @map("created_at")
+ student User @relation("StudentReports",fields:[studentId],references:[id])
+ mentor User @relation("MentorReports",fields:[mentorId],references:[id])
+ approvedBy User? @relation("ApprovedReports",fields:[approvedById],references:[id])
+ class Class @relation(fields:[classId],references:[id],onDelete:Cascade)
+ @@map("progress_reports")
+}
+model LiveSession {
+ id String @id @default(uuid()) @db.Uuid
+ classId String @db.Uuid @map("class_id")
+ mentorId String @db.Uuid @map("mentor_id")
+ title String
+ scheduledAt DateTime @map("scheduled_at")
+ meetingLink String @map("meeting_link")
+ status LiveStatus @default(SCHEDULED)
+ class Class @relation(fields:[classId],references:[id],onDelete:Cascade)
+ mentor User @relation("LiveMentor",fields:[mentorId],references:[id])
+ @@map("live_sessions")
+}
+model Notification {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid @map("user_id")
+ title String
+ message String
+ isRead Boolean @default(false) @map("is_read")
+ createdAt DateTime @default(now()) @map("created_at")
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@index([userId,isRead])
+ @@map("notifications")
+}
+model Transaction {
+ id String @id @default(uuid()) @db.Uuid
+ studentId String @db.Uuid @map("student_id")
+ classId String @db.Uuid @map("class_id")
+ amount Decimal @db.Decimal(12,2)
+ paymentMethod String? @map("payment_method")
+ status TransactionStatus @default(PENDING)
+ providerOrderId String @unique @map("provider_order_id")
+ paidAt DateTime? @map("paid_at")
+ createdAt DateTime @default(now()) @map("created_at")
+ student User @relation(fields:[studentId],references:[id])
+ class Class @relation(fields:[classId],references:[id])
+ @@map("transactions")
+}
