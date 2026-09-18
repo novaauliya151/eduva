@@ -1,0 +1,6 @@
+import crypto from 'node:crypto';import jwt from 'jsonwebtoken';import type {Role} from '@prisma/client';import {prisma} from '../db.js';import {env} from '../config.js';
+export const hashToken=(token:string)=>crypto.createHash('sha256').update(token).digest('hex');
+export const createAccessToken=(id:string,role:Role)=>jwt.sign({id,role},env.JWT_SECRET,{expiresIn:env.ACCESS_TOKEN_TTL as jwt.SignOptions['expiresIn']});
+export async function createRefreshToken(userId:string){const token=crypto.randomBytes(48).toString('base64url');const record=await prisma.refreshToken.create({data:{userId,tokenHash:hashToken(token),expiresAt:new Date(Date.now()+env.REFRESH_TOKEN_DAYS*864e5)}});return{token,record}}
+export async function rotateRefreshToken(token:string){const current=await prisma.refreshToken.findUnique({where:{tokenHash:hashToken(token)},include:{user:true}});if(!current||current.revokedAt||current.expiresAt<new Date())return null;const next=await createRefreshToken(current.userId);await prisma.refreshToken.update({where:{id:current.id},data:{revokedAt:new Date(),replacedById:next.record.id}});return{token:next.token,user:current.user}}
+export async function revokeRefreshToken(token:string){await prisma.refreshToken.updateMany({where:{tokenHash:hashToken(token),revokedAt:null},data:{revokedAt:new Date()}})}

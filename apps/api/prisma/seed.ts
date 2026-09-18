@@ -12,7 +12,7 @@ async function main(){
   ['Orang Tua Eduva','parent@eduva.id','Parent123!','PARENT']
  ] as const;
  const users=[];
- for(const[name,email,password,role]of rows)users.push(await db.user.upsert({where:{email},update:{},create:{name,email,password:await bcrypt.hash(password,12),role}}));
+ for(const[name,email,password,role]of rows)users.push(await db.user.upsert({where:{email},update:{emailVerifiedAt:new Date()},create:{name,email,password:await bcrypt.hash(password,12),role,emailVerifiedAt:new Date()}}));
  await db.studentProfile.upsert({where:{userId:users[2].id},update:{parentId:users[3].id},create:{userId:users[2].id,parentId:users[3].id,gradeLevel:'SMA'}});
  const subject=await db.subject.upsert({where:{name_gradeLevel:{name:'Matematika',gradeLevel:'SMA'}},update:{},create:{name:'Matematika',gradeLevel:'SMA'}});
  await db.class.upsert({where:{id:'00000000-0000-4000-8000-000000000001'},update:{},create:{id:'00000000-0000-4000-8000-000000000001',title:'Matematika Intensif SMA',description:'Kuasai konsep dan strategi soal Matematika SMA secara terarah.',subjectId:subject.id,mentorId:users[1].id,createdById:users[1].id,type:'BIMBEL_TERJADWAL',status:'PUBLISHED',price:299000}});

@@ -6,7 +6,9 @@ import type {Role} from './types';
 import {Login} from './pages/Login';
 import {Dashboard} from './pages/Dashboard';
 import {PlacementTest} from './pages/PlacementTest';
-import {ForgotPassword,Register,ResetPassword} from './pages/AuthExtras';
+import {ForgotPassword,ResetPassword} from './pages/AuthExtras';
+import {RegisterSecure} from './pages/RegisterSecure';
+import {VerifyEmail} from './pages/VerifyEmail';
 
 function Guard({roles}:{roles?:Role[]}){
  const user=useAuth(s=>s.user);
@@ -35,9 +37,10 @@ function PlacementRoute(){
 
 export function App(){return <Routes>
  <Route path="/login" element={<Login/>}/>
- <Route path="/register" element={<Register/>}/>
+ <Route path="/register" element={<RegisterSecure/>}/>
  <Route path="/forgot-password" element={<ForgotPassword/>}/>
  <Route path="/reset-password" element={<ResetPassword/>}/>
+ <Route path="/verify-email" element={<VerifyEmail/>}/>
  <Route path="/placement-test" element={<PlacementRoute/>}/>
  <Route path="/" element={<StudentGuard/>}/>
  <Route path="/classes" element={<StudentGuard/>}/>
